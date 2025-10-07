@@ -9,46 +9,51 @@ namespace FileFragmentation.Model
     {
         private readonly string inputFile = "input.txt";
         private readonly string outputFile = "output.txt";
+        private readonly string fragmentFolder = "Fragments"; // ✅ Define this field
 
         public void CreateInputFile(string data)
         {
             File.WriteAllText(inputFile, data);
-            Console.WriteLine("\n Input file created successfully.\n");
+            Console.WriteLine("\nInput file created successfully.\n");
         }
 
         public void FragmentFile(int size)
         {
+            if (!File.Exists(inputFile))
+            {
+                Console.WriteLine(" Input file not found.");
+                return;
+            }
+
             string content = File.ReadAllText(inputFile);
             int fileCount = (int)Math.Ceiling((double)content.Length / size);
 
-            // Determine padding dynamically based on file count
-            int padding = fileCount >= 1000 ? 4 :
-                          fileCount >= 100 ? 3 :
-                          fileCount >= 10 ? 2 : 0;
+            int padding = fileCount.ToString().Length;
+
+            Directory.CreateDirectory(fragmentFolder);
 
             for (int i = 1; i <= fileCount; i++)
             {
-                string fragment = new string(content.Skip((i - 1) * size).Take(size).ToArray());
+                string fragment = new string(content
+                    .Skip((i - 1) * size)
+                    .Take(size)
+                    .ToArray());
 
-                string fileName;
-                if (padding > 0)
-                    fileName = i.ToString($"D{padding}") + ".txt"; // Zero-padded
-                else
-                    fileName = $"{i}.txt"; // No zero padding (for <10 files)
+                string fileName = $"{i.ToString().PadLeft(padding, '0')}.txt";
+                string fullPath = Path.Combine(fragmentFolder, fileName);
 
-                File.WriteAllText(fileName, fragment);
+                File.WriteAllText(fullPath, fragment);
             }
 
-            Console.WriteLine($"Fragmentation completed — {fileCount} files created.\n");
+            Console.WriteLine($"\n Fragmentation completed — {fileCount} file(s) created in \"{fragmentFolder}\" folder.");
         }
-
-
 
         public List<string> GetFragmentFiles()
         {
-            var files = Directory.GetFiles(Directory.GetCurrentDirectory(), "???.txt")
-                                 .Where(f => Path.GetFileName(f) != "input.txt" &&
-                                             Path.GetFileName(f) != "output.txt")
+            if (!Directory.Exists(fragmentFolder))
+                return new List<string>();
+
+            var files = Directory.GetFiles(fragmentFolder, "*.txt")
                                  .OrderBy(f => f)
                                  .ToList();
             return files;
@@ -56,20 +61,31 @@ namespace FileFragmentation.Model
 
         public void VerifyFileExistence(string fileName)
         {
-            if (File.Exists(fileName))
-            {
-                Console.WriteLine($" File '{fileName}' exists. Content:\n");
-                Console.WriteLine(File.ReadAllText(fileName));
-            }
-            else
-            { 
-                Console.WriteLine(" File not found!\n");
-            }
+            string fullPath = Path.Combine(fragmentFolder, fileName);
+
+                if (File.Exists(fullPath))
+                {
+                    Console.WriteLine($"\n File '{fileName}' exists. Content:\n");
+                    Console.WriteLine(File.ReadAllText(fullPath));
+                    return;
+                }
+                else
+                {
+                    Console.WriteLine($"\n File '{fileName}' not found in '{fragmentFolder}' folder.\n");
+                }
+            
         }
+
 
         public void DefragmentFiles()
         {
             var files = GetFragmentFiles();
+            if (files.Count == 0)
+            {
+                Console.WriteLine(" No fragments to defragment.");
+                return;
+            }
+
             string combinedData = "";
 
             foreach (var file in files)
@@ -85,6 +101,9 @@ namespace FileFragmentation.Model
 
         public bool CompareFiles()
         {
+            if (!File.Exists(inputFile) || !File.Exists(outputFile))
+                return false;
+
             string inputData = File.ReadAllText(inputFile);
             string outputData = File.ReadAllText(outputFile);
             return inputData.Equals(outputData);
@@ -92,11 +111,30 @@ namespace FileFragmentation.Model
 
         public void DeleteAllFiles()
         {
-            foreach (var file in Directory.GetFiles(Directory.GetCurrentDirectory(), "*.txt"))
+            if (Directory.Exists(fragmentFolder))
             {
-                File.Delete(file);
+                string[] files = Directory.GetFiles(fragmentFolder);
+
+                foreach (string file in files)
+                {
+                    try
+                    {
+                        File.Delete(file);
+                        File.Delete(inputFile);
+                        File.Delete(outputFile);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($" Error deleting {file}: {ex.Message}");
+                    }
+                }
+
+                Console.WriteLine(" All files deleted from 'Fragments' folder.");
             }
-            Console.WriteLine("\n All files deleted.\n");
+            else
+            {
+                Console.WriteLine(" 'Fragments' folder not found.");
+            }
         }
     }
 }

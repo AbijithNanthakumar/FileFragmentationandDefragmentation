@@ -20,27 +20,21 @@ namespace FileFragmentation.Controller
             _manager.DeleteAllFiles();
             try
             {
-                // Step 1: Create input file
                 string paragraph = _view.GetParagraph();
                 _manager.CreateInputFile(paragraph);
 
-                // Step 2: Fragmentation
                 int size = _view.GetFragmentSize();
                 _manager.FragmentFile(size);
                 _view.DisplayFiles(_manager.GetFragmentFiles());
 
-                // Step 3: Verify existence
                 string fileName = _view.GetFileNameToVerify();
                 _manager.VerifyFileExistence(fileName);
 
-                // Step 4: Defragmentation
                 _manager.DefragmentFiles();
 
-                // Step 5: Compare input and output
                 bool isSame = _manager.CompareFiles();
                 _view.DisplayComparisonResult(isSame);
 
-                // Ask for restart
                 _view.AskForRestart(_manager);
             }
             catch (Exception ex)

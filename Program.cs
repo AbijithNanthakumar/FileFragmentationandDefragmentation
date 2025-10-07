@@ -6,7 +6,7 @@ namespace FileFragmentation
     {
         public static void Main(string[] args)
         {
-            FileController controller = new FileController();
+            FileController controller = new FileController(); 
             controller.Start();
         }
     }
